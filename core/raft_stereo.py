@@ -70,6 +70,24 @@ class RAFTStereo(nn.Module):
 
     def forward(self, image1, image2, iters=12, flow_init=None, test_mode=False):
         """ Estimate optical flow between pair of frames """
+        
+        # args Namespace(context_norm='batch', 
+        #                corr_implementation='alt', 
+        #                corr_levels=4, 
+        #                corr_radius=4, 
+        #                hidden_dims=[128, 128, 128], 
+        #                left_imgs='datasets/Middlebury/MiddEval3/testF/Bicycle2/im0.png', 
+        #                mixed_precision=True, 
+        #                n_downsample=2, 
+        #                n_gru_layers=3, 
+        #                output_directory='demo_output', 
+        #                restore_ckpt='models/raftstereo-middlebury.pth', 
+        #                right_imgs='datasets/Middlebury/MiddEval3/testF/Bicycle2/im1.png', 
+        #                save_numpy=True, 
+        #                shared_backbone=False, 
+        #                slow_fast_gru=False, 
+        #                valid_iters=32)
+
         print('image1', image1.shape)
         print('image2', image2.shape)
         image1 = (2 * (image1 / 255.0) - 1.0).contiguous()
@@ -78,11 +96,11 @@ class RAFTStereo(nn.Module):
         # run the context network
         with autocast(enabled=self.args.mixed_precision):
             if self.args.shared_backbone:
-                print('1111')
                 *cnet_list, x = self.cnet(torch.cat((image1, image2), dim=0), dual_inp=True, num_layers=self.args.n_gru_layers)
                 fmap1, fmap2 = self.conv2(x).split(dim=0, split_size=x.shape[0]//2)
             else:
                 print('2222')
+                #########################
                 cnet_list = self.cnet(image1, num_layers=self.args.n_gru_layers)
                 fmap1, fmap2 = self.fnet([image1, image2])
             print('3333')
@@ -111,9 +129,12 @@ class RAFTStereo(nn.Module):
 
         flow_predictions = []
         for itr in range(iters):
+            print('itr', itr)
             coords1 = coords1.detach()
             corr = corr_fn(coords1) # index correlation volume
             flow = coords1 - coords0
+            print('corr', corr.shape)
+            print('flow', flow.shape)
             with autocast(enabled=self.args.mixed_precision):
                 if self.args.n_gru_layers == 3 and self.args.slow_fast_gru: # Update low-res GRU
                     print('aaaa')
@@ -122,6 +143,8 @@ class RAFTStereo(nn.Module):
                     print('bbbb')
                     net_list = self.update_block(net_list, inp_list, iter32=self.args.n_gru_layers==3, iter16=True, iter08=False, update=False)
                 print('cccc')
+                ######################
+                # n_gru_layers == 3
                 net_list, up_mask, delta_flow = self.update_block(net_list, inp_list, corr, flow, iter32=self.args.n_gru_layers==3, iter16=self.args.n_gru_layers>=2)
 
             # in stereo mode, project flow onto epipolar
