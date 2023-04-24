@@ -23,9 +23,10 @@ class RAFTStereo(nn.Module):
     def __init__(self, args):
         super().__init__()
         self.args = args
+        print('args', self.args)
         
         context_dims = args.hidden_dims
-        
+
         self.cnet = MultiBasicEncoder(output_dim=[args.hidden_dims, context_dims], norm_fn=args.context_norm, downsample=args.n_downsample)
         self.update_block = BasicMultiUpdateBlock(self.args, hidden_dims=args.hidden_dims)
 
