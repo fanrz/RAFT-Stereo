@@ -74,5 +74,5 @@ if __name__ == '__main__':
     parser.add_argument('--n_gru_layers', type=int, default=3, help="number of hidden GRU levels")
     
     args = parser.parse_args()
-
+    print(args)
     demo(args)
