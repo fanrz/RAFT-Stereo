@@ -78,11 +78,14 @@ class RAFTStereo(nn.Module):
         # run the context network
         with autocast(enabled=self.args.mixed_precision):
             if self.args.shared_backbone:
+                print('1111')
                 *cnet_list, x = self.cnet(torch.cat((image1, image2), dim=0), dual_inp=True, num_layers=self.args.n_gru_layers)
                 fmap1, fmap2 = self.conv2(x).split(dim=0, split_size=x.shape[0]//2)
             else:
+                print('2222')
                 cnet_list = self.cnet(image1, num_layers=self.args.n_gru_layers)
                 fmap1, fmap2 = self.fnet([image1, image2])
+            print('3333')
             net_list = [torch.tanh(x[0]) for x in cnet_list]
             inp_list = [torch.relu(x[1]) for x in cnet_list]
 
